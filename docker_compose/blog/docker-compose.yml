@@ -1,0 +1,55 @@
+version: '2'
+
+services:
+  blog:
+    build:
+      context: ../../src/blog
+      dockerfile: Dockerfile
+    networks:
+      - mynetwork
+    restart: always
+    environment:
+      # see https://ghost.org/docs/config/#configuration-options
+      database__client: mysql
+      database__connection__host: database
+      database__connection__user: root
+      database__connection__password: strong_password
+      database__connection__database: ghost
+      url: https://tecoblog.ddns.net
+      NODE_ENV: production
+
+  database:
+    image: mysql:5.7
+    restart: always
+    volumes:
+      - ~/data/db:/var/lib/mysql
+# Only turn me on if youre not connected to the internet. Use run on the image dummy.
+#    ports:
+#      - "13928:3306"
+    networks:
+      - mynetwork
+    environment:
+      MYSQL_ROOT_PASSWORD: ${strong_password}
+      MYSQL_DATABASE: ghost
+      MYSQL_USER: user
+      MYSQL_PASSWORD: ${strong_password}
+
+  nginx:
+    build:
+      context: ../../apis/nginx
+      dockerfile: Dockerfile
+    networks:
+      - incucknito
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - blog
+
+volumes:
+  cache:
+    driver: local
+
+networks:
+  incucknito:
+    name: mynetwork
